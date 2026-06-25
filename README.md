@@ -1,283 +1,73 @@
-# 🚦 Traffic Demand Prediction
+# LOGIX: Logistics Demand Forecasting Dashboard
 
-A Machine Learning project that predicts traffic demand using historical traffic data. The objective is to forecast traffic volume accurately so that transportation systems can be optimized for better traffic management, reduced congestion, and improved urban mobility.
+This folder contains a premium, interactive web application dashboard designed for the Flipkart Hackathon Demand Forecasting model. It allows users to visualize, explore, and predict demand both interactively and in batch mode.
 
----
+## 🚀 Key Features
 
-## 📖 Project Overview
-
-Traffic forecasting plays a crucial role in smart transportation systems. This project leverages data preprocessing, exploratory data analysis (EDA), feature engineering, and machine learning techniques to predict future traffic demand based on historical patterns.
-
-### Key Goals
-- Analyze historical traffic data.
-- Identify traffic demand trends and patterns.
-- Build predictive machine learning models.
-- Evaluate model performance using regression metrics.
-- Visualize insights and prediction results.
+1. **Interactive Demand Console**: A sidebar panel that lets you test different spatial, temporal, road infrastructure, and weather factors, showing real-time demand score predictions and qualitative descriptions.
+2. **Interactive Flow Map**: A dark-themed geographical map powered by Leaflet.js.
+   - Plots historical **demand hotspots** (geohashes) directly on the map.
+   - Click anywhere on the map to pin a coordinate, automatically decodes to a geohash, and updates the console inputs to compute immediate predictions.
+3. **Model Insights**: Chart.js visualizations comparing GBDT models (LightGBM, XGBoost, CatBoost, and Ensemble) along with a Feature Importance chart for the linear model coefficients.
+4. **Batch CSV Predictor**: Drag and drop a test `.csv` file (like the hackathon's `test.csv`), view a preview table of predictions, and download the finished CSV containing predicted demand levels.
+5. **Theme Switching**: Supports both sleek dark mode (default) and standard light mode.
+6. **100% Serverless**: Runs entirely in the browser using a lightweight OLS/Ridge model approximation.
 
 ---
 
-## ✨ Features
+## 🛠️ How to Run Locally
 
-- Data Cleaning and Preprocessing
-- Exploratory Data Analysis (EDA)
-- Feature Engineering
-- Multiple Machine Learning Models
-- Traffic Demand Forecasting
-- Model Evaluation and Comparison
-- Data Visualization
+Since the application runs client-side, you can host it locally with a simple HTTP server:
 
----
+1. Open a terminal in this `web/` folder.
+2. Run the start command:
+   ```bash
+   npm run dev
+   ```
+3. Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
 
-## 🛠️ Tech Stack
-
-### Programming Language
-- Python
-
-### Libraries Used
-- Pandas
-- NumPy
-- Matplotlib
-- Seaborn
-- Scikit-Learn
-- XGBoost *(if used)*
-- TensorFlow/Keras *(if used)*
-
-### Development Environment
-- Jupyter Notebook
-
----
-
-## 📂 Project Structure
-
-```text
-Traffic-Demand-Prediction/
-│
-├── data/
-│   ├── raw_data.csv
-│   └── processed_data.csv
-│
-├── notebooks/
-│   └── Traffic_Demand_Prediction.ipynb
-│
-├── models/
-│   └── trained_model.pkl
-│
-├── images/
-│   └── output_visualizations.png
-│
-├── requirements.txt
-├── README.md
-└── LICENSE
-```
-
----
-
-## 📊 Dataset
-
-The dataset contains traffic-related information such as:
-
-- Date and Time
-- Traffic Volume
-- Vehicle Count
-- Road Conditions
-- Weather Data
-- Peak/Off-Peak Hours
-
-### Data Preprocessing Steps
-
-- Handling Missing Values
-- Removing Duplicates
-- Outlier Detection
-- Feature Engineering
-- Encoding Categorical Features
-- Data Scaling and Normalization
-
----
-
-## 🔍 Exploratory Data Analysis
-
-The project includes:
-
-- Traffic Volume Distribution
-- Hourly Traffic Trends
-- Daily and Weekly Traffic Analysis
-- Correlation Heatmaps
-- Feature Importance Analysis
-
-### Sample Insights
-
-- Traffic peaks during office commuting hours.
-- Weekday traffic is generally higher than weekend traffic.
-- Weather conditions significantly affect traffic flow.
-
----
-
-## 🤖 Machine Learning Models
-
-The following algorithms were explored:
-
-- Linear Regression
-- Decision Tree Regressor
-- Random Forest Regressor
-- Gradient Boosting Regressor
-- XGBoost Regressor *(if implemented)*
-- LSTM Neural Network *(if implemented)*
-
----
-
-## 📈 Model Evaluation
-
-Performance is evaluated using:
-
-- Mean Absolute Error (MAE)
-- Mean Squared Error (MSE)
-- Root Mean Squared Error (RMSE)
-- R² Score
-
-### Example Results
-
-| Model | MAE | RMSE | R² Score |
-|---------|---------|---------|---------|
-| Linear Regression | XX | XX | XX |
-| Random Forest | XX | XX | XX |
-| XGBoost | XX | XX | XX |
-
-> Replace the values above with your actual results.
-
----
-
-## 📷 Visualizations
-
-### Traffic Trends
-- Hourly Traffic Flow
-- Daily Traffic Patterns
-- Weekly Demand Analysis
-
-### Model Performance
-- Actual vs Predicted Values
-- Error Distribution
-- Feature Importance
-
----
-
-## 🚀 Installation
-
-### Clone the Repository
-
+*Alternatively, if you have python installed, you can run:*
 ```bash
-git clone https://github.com/parasaramsrivatsav/Traffic-Demand-Prediction.git
+python -m http.server 3000
 ```
 
-### Navigate to the Project Folder
+---
 
+## 💾 How the Serverless Engine Works
+
+The dashboard runs fully client-side. Rather than invoking an active Python Flask/FastAPI server (which is slow and expensive to deploy), we compiled model weights directly into `model_weights.json`.
+
+We used `prepare_model.js` (a Node.js script) to:
+1. Load `train.csv`.
+2. Compute target encodings for categorical columns (mapping geohashes, road types, etc. to average historical demand).
+3. Train a Ridge regression model over all features.
+4. Export the lookup maps, model coefficients, map bounds, and performance metrics to `model_weights.json`.
+
+If you ever update the training dataset or want to retrain the local linear model, you can run:
 ```bash
-cd Traffic-Demand-Prediction
+node prepare_model.js
 ```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
+This will automatically generate a fresh `model_weights.json` for the frontend.
 
 ---
 
-## ▶️ Usage
+## 🌐 Deployment Guide
 
-### Run Jupyter Notebook
+Because the application is fully static, you can deploy it in seconds for **free**:
 
-```bash
-jupyter notebook
-```
+### 1. Netlify Drop (Easiest)
+- Go to [Netlify Drop](https://app.netlify.com/drop).
+- Drag and drop this `web/` folder.
+- Within 5 seconds, you will receive a public URL to share!
 
-### Open
+### 2. GitHub Pages
+- Initialize a git repository and push your project to GitHub.
+- Go to repository **Settings** > **Pages**.
+- Set the source to **Deploy from a branch** (e.g. `main` branch) and specify the `/web` folder (or push only the contents of `/web` to a repository and select `/root`).
+- Save, and your app will be online in a minute!
 
-```text
-Traffic_Demand_Prediction.ipynb
-```
-
-### Execute All Cells
-
-The notebook will:
-
-1. Load the dataset.
-2. Perform preprocessing.
-3. Train the model.
-4. Evaluate performance.
-5. Generate predictions and visualizations.
-
----
-
-## 📊 Workflow
-
-```text
-Data Collection
-       ↓
-Data Preprocessing
-       ↓
-Exploratory Data Analysis
-       ↓
-Feature Engineering
-       ↓
-Model Training
-       ↓
-Model Evaluation
-       ↓
-Traffic Demand Prediction
-```
-
----
-
-## 🎯 Results
-
-The trained model successfully learns traffic demand patterns and predicts future traffic volume with good accuracy.
-
-Key achievements:
-
-- Improved traffic demand forecasting.
-- Identified influential traffic factors.
-- Generated meaningful visual insights.
-- Compared multiple machine learning approaches.
-
----
-
-## 🔮 Future Enhancements
-
-- Real-Time Traffic Prediction
-- Deep Learning Models (LSTM, GRU)
-- Integration with Traffic Sensor Data
-- Deployment as a Web Application
-- Smart City Traffic Analytics Dashboard
-
----
-
-## 👨‍💻 Author
-
-### Srivatsav Parasaram
-
-- GitHub: https://github.com/parasaramsrivatsav
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-1. Fork the repository.
-2. Create a new branch.
-3. Commit your changes.
-4. Push the branch.
-5. Create a Pull Request.
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
-
----
-
-## ⭐ Support
-
-If you found this project useful, please consider giving it a ⭐ on GitHub.
+### 3. Vercel / Firebase Hosting
+- Run `vercel` or `firebase init` inside this directory and follow the prompts to deploy instantly.

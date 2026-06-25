@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGIX - Logistics & Demand Forecasting Hub</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js (Map Library) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Chart.js (Data Visualization) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <i data-lucide="activity" class="glow-icon"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>LOGIX</h1>
+                    <span>Demand Forecasting Dashboard</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="model-badge">
+                    <span class="pulse-dot"></span>
+                    Ensemble Model: v1.0.3
+                </div>
+                <button id="themeToggle" class="icon-button" title="Toggle Theme">
+                    <i data-lucide="sun"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Overview Banner -->
+        <section class="stats-banner">
+            <div class="stat-card">
+                <div class="stat-icon-wrapper blue">
+                    <i data-lucide="database"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Dataset Size</span>
+                    <span class="stat-value">77,299 Rows</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-wrapper purple">
+                    <i data-lucide="map-pin"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Tracked Geohashes</span>
+                    <span class="stat-value">1,249 Regions</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-wrapper green">
+                    <i data-lucide="sparkles"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Model Accuracy (R²)</span>
+                    <span class="stat-value">95.15%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-wrapper orange">
+                    <i data-lucide="trending-up"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Ensemble MAE</span>
+                    <span class="stat-value">0.02168</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace -->
+        <main class="app-content">
+            <!-- Left Panel: Form & Prediction Gauge -->
+            <section class="control-panel glass-panel">
+                <div class="panel-header">
+                    <i data-lucide="sliders"></i>
+                    <h2>Forecasting Console</h2>
+                </div>
+                
+                <form id="predictionForm" class="prediction-form">
+                    <!-- Location Selector -->
+                    <div class="form-group-title">Spatial Parameters</div>
+                    
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="latitude">Latitude</label>
+                            <input type="number" id="latitude" name="latitude" step="0.000001" min="-90" max="90" value="-5.361300" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="longitude">Longitude</label>
+                            <input type="number" id="longitude" name="longitude" step="0.000001" min="-180" max="180" value="90.780000" required>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="geohash">Geohash (Auto-calculated)</label>
+                        <div class="input-with-action">
+                            <input type="text" id="geohash" name="geohash" value="qp02z1" readonly>
+                            <span class="input-badge">6 chars</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group-title">Temporal Parameters</div>
+                    
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="day">Day of Sequence</label>
+                            <select id="day" name="day">
+                                <option value="48">Day 48 (Train Baseline)</option>
+                                <option value="49" selected>Day 49 (Prediction target)</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="timestamp">Time of Day</label>
+                            <input type="time" id="timestamp" name="timestamp" value="12:00" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group-title">Road Infrastructure</div>
+                    
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="roadType">Road Type</label>
+                            <select id="roadType" name="roadType">
+                                <option value="Residential" selected>Residential</option>
+                                <option value="Street">Street</option>
+                                <option value="Highway">Highway</option>
+                                <option value="Unknown">Unknown</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="numLanes">Number of Lanes</label>
+                            <select id="numLanes" name="numLanes">
+                                <option value="1" selected>1 Lane</option>
+                                <option value="2">2 Lanes</option>
+                                <option value="3">3 Lanes</option>
+                                <option value="4">4 Lanes</option>
+                                <option value="5">5 Lanes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="largeVehicles">Large Vehicles</label>
+                            <select id="largeVehicles" name="largeVehicles">
+                                <option value="Allowed">Allowed</option>
+                                <option value="Not Allowed" selected>Not Allowed</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="landmarks">Landmark Proximity</label>
+                            <select id="landmarks" name="landmarks">
+                                <option value="Yes">Yes (Near landmarks)</option>
+                                <option value="No" selected>No (Isolated)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group-title">Environmental Factors</div>
+                    
+                    <div class="form-field">
+                        <div class="label-with-value">
+                            <label for="temperature">Temperature (°C)</label>
+                            <span id="tempValue" class="slider-value">25.0 °C</span>
+                        </div>
+                        <input type="range" id="temperature" name="temperature" min="-15" max="50" step="0.5" value="25.0">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="weather">Weather Condition</label>
+                        <select id="weather" name="weather">
+                            <option value="Sunny" selected>Sunny</option>
+                            <option value="Rainy">Rainy</option>
+                            <option value="Snowy">Snowy</option>
+                            <option value="Foggy">Foggy</option>
+                            <option value="Unknown">Unknown</option>
+                        </select>
+                    </div>
+                </form>
+
+                <!-- Forecast Result Display -->
+                <div class="prediction-result-card">
+                    <div class="gauge-container">
+                        <svg class="progress-ring" width="120" height="120">
+                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="50" cx="60" cy="60"/>
+                            <circle id="predictionGauge" class="progress-ring__circle" stroke="#10b981" stroke-width="8" fill="transparent" r="50" cx="60" cy="60"/>
+                        </svg>
+                        <div class="gauge-text">
+                            <span id="demandScore">0.000</span>
+                            <span class="gauge-label">DEMAND</span>
+                        </div>
+                    </div>
+                    <div class="result-details">
+                        <h3>Prediction Output</h3>
+                        <div id="demandStatus" class="status-badge green">Low Load</div>
+                        <p id="demandDescription">Traffic flow is optimal. High logistics efficiency expected.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Tabs, Map, Charts, Batch Mode -->
+            <section class="display-panel glass-panel">
+                <nav class="tab-navigation">
+                    <button class="tab-button active" data-tab="mapTab">
+                        <i data-lucide="map"></i> Interactive Map
+                    </button>
+                    <button class="tab-button" data-tab="insightsTab">
+                        <i data-lucide="bar-chart-3"></i> Model Insights
+                    </button>
+                    <button class="tab-button" data-tab="dataTab">
+                        <i data-lucide="table"></i> CSV Predictor
+                    </button>
+                    <button class="tab-button" data-tab="docsTab">
+                        <i data-lucide="book-open"></i> Solution Docs
+                    </button>
+                </nav>
+
+                <div class="tab-content-container">
+                    <!-- TAB 1: Leaflet Interactive Map -->
+                    <div id="mapTab" class="tab-content active">
+                        <div class="map-wrapper">
+                            <div id="map"></div>
+                            <div class="map-overlay-legend">
+                                <h4>Demand Legend</h4>
+                                <div class="legend-item"><span class="legend-color low"></span> Low (< 0.1)</div>
+                                <div class="legend-item"><span class="legend-color medium"></span> Moderate (0.1 - 0.3)</div>
+                                <div class="legend-item"><span class="legend-color high"></span> High (0.3 - 0.6)</div>
+                                <div class="legend-item"><span class="legend-color critical"></span> Critical (> 0.6)</div>
+                            </div>
+                        </div>
+                        <div class="map-instructions">
+                            <i data-lucide="info"></i>
+                            <span>Click anywhere on the map to place a pin. The latitude, longitude, and decoded geohash will automatically sync with the Forecasting Console.</span>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Model Performance & Insights -->
+                    <div id="insightsTab" class="tab-content">
+                        <div class="insights-grid">
+                            <div class="chart-card">
+                                <h3>Algorithm Performance Comparison</h3>
+                                <p class="chart-desc">R² (Coefficient of Determination) scores from hackathon cross-validation.</p>
+                                <div class="chart-container">
+                                    <canvas id="modelComparisonChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-card">
+                                <h3>Feature Importances</h3>
+                                <p class="chart-desc">Relative influence of target-encoded columns and spatial/temporal interactions.</p>
+                                <div class="chart-container">
+                                    <canvas id="featureImportanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="insights-metrics-box">
+                            <h3>Ridge Regression Approximation Details</h3>
+                            <div class="metrics-row">
+                                <div class="metric-mini-card">
+                                    <span class="mini-label">Linear Model R²</span>
+                                    <span class="mini-value" id="ridgeR2">84.41%</span>
+                                </div>
+                                <div class="metric-mini-card">
+                                    <span class="mini-label">Linear Model MAE</span>
+                                    <span class="mini-value" id="ridgeMAE">0.0363</span>
+                                </div>
+                                <div class="metric-mini-card">
+                                    <span class="mini-label">Regularization Alpha</span>
+                                    <span class="mini-value">1.0 (L2 Penalty)</span>
+                                </div>
+                            </div>
+                            <p class="explanation-text">
+                                <strong>Technical Note:</strong> The local dashboard uses a Ridge regression model trained on target-encoded values. By mapping high-cardinality features like <code>geohash</code> to target averages, we compress complex non-linear spatial dependencies into linear space. While the full GBDT ensemble (LGBM + XGBoost + CatBoost) yields 95.15% R², this 84.41% linear approximation runs entirely client-side in the browser in less than 1ms.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Batch CSV Predictor -->
+                    <div id="dataTab" class="tab-content">
+                        <div class="predictor-card-wide">
+                            <div class="batch-upload-zone" id="dropZone">
+                                <i data-lucide="upload-cloud" class="upload-icon"></i>
+                                <h3>Batch Demand Forecaster</h3>
+                                <p>Drag and drop a <code>.csv</code> file containing test data rows, or click to upload.</p>
+                                <span class="file-spec">Required columns: <code>geohash</code>, <code>day</code>, <code>timestamp</code>, <code>RoadType</code>, <code>NumberofLanes</code>, <code>LargeVehicles</code>, <code>Landmarks</code>, <code>Temperature</code>, <code>Weather</code></span>
+                                <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                                <button class="btn btn-primary" id="selectFileBtn">Browse Files</button>
+                            </div>
+                            
+                            <div id="batchProcessingStatus" class="batch-status" style="display: none;">
+                                <div class="loader-spinner"></div>
+                                <p id="statusMessage">Processing rows...</p>
+                            </div>
+
+                            <div id="batchResultContainer" class="batch-results-panel" style="display: none;">
+                                <div class="results-summary">
+                                    <div class="result-stat">
+                                        <span id="processedRowCount" class="stat-num">0</span>
+                                        <span>Rows Processed</span>
+                                    </div>
+                                    <button class="btn btn-success" id="downloadResultsBtn">
+                                        <i data-lucide="download"></i> Download predictions.csv
+                                    </button>
+                                </div>
+                                <div class="table-scroll-container">
+                                    <table class="data-preview-table" id="previewTable">
+                                        <thead>
+                                            <!-- Dynamic Header -->
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic Rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: Solution Documentation -->
+                    <div id="docsTab" class="tab-content">
+                        <div class="docs-container">
+                            <h2>Flipkart Hackathon Logistics Demand Forecasting</h2>
+                            
+                            <div class="doc-section">
+                                <h3>Problem Statement</h3>
+                                <p>
+                                    Logistics and supply chain systems require highly accurate demand forecasting to optimize vehicle routing, delivery slots, and warehouse labor allocation. In this challenge, the goal is to forecast demand levels across various spatial nodes (geohashes) under fluctuating conditions.
+                                </p>
+                            </div>
+
+                            <div class="doc-section">
+                                <h3>Feature Engineering Strategy</h3>
+                                <ul>
+                                    <li><strong>Geohash Spatial Decoding:</strong> Decoded high-resolution 6-character geohash string into latitude and longitude coordinates. Calculated coordinate squares and cross-products to capture geographic clusters.</li>
+                                    <li><strong>Temporal Extraction:</strong> Extracted hours and minutes from timestamps. Calculated 96 quarter-hour slots per day, and identified high-volume rush hour intervals (7-9 AM and 5-7 PM).</li>
+                                    <li><strong>Target Encoding:</strong> For high-cardinality categories (like geohash regions), standard one-hot encoding creates too many columns. We calculated target encoding (the average historical demand level of each category) to compress features cleanly.</li>
+                                    <li><strong>Environmental Alignment:</strong> Handled missing values in weather (mapped to "Unknown") and temperature (imputed using the baseline training median).</li>
+                                </ul>
+                            </div>
+
+                            <div class="doc-section">
+                                <h3>Machine Learning Model Architecture</h3>
+                                <p>
+                                    The final submission solution trains three major Gradient Boosting Decision Tree (GBDT) frameworks using K-Fold cross validation (5 splits):
+                                </p>
+                                <ol>
+                                    <li><strong>LightGBM (40% Weight):</strong> High speed, leaf-wise tree growth, excellent with target-encoded maps.</li>
+                                    <li><strong>CatBoost (30% Weight):</strong> Native support for categorical variables, robust generalization.</li>
+                                    <li><strong>XGBoost (30% Weight):</strong> Strict regularization preventing overfitting on spatial density.</li>
+                                </ol>
+                                <p>
+                                    The predictions are ensembled to yield the final <strong>95.15% R² Score</strong> on the dataset.
+                                </p>
+                            </div>
+
+                            <div class="doc-section">
+                                <h3>Deployment & Reproduction Guide</h3>
+                                <div class="code-block-container">
+                                    <div class="code-header">
+                                        <span>Training Notebook</span>
+                                        <button class="copy-code-btn" data-target="codeNotebook"><i data-lucide="copy"></i></button>
+                                    </div>
+                                    <pre id="codeNotebook"><code># Install dependencies
+!pip install lightgbm catboost xgboost pygeohash category_encoders -q
+
+# Run K-Fold training and export predictions
+# (Available in the repository root directory as Prediction.ipynb)</code></pre>
+                                </div>
+                                
+                                <div class="code-block-container">
+                                    <div class="code-header">
+                                        <span>Deploy Web Dashboard (GitHub Pages / Netlify)</span>
+                                        <button class="copy-code-btn" data-target="codeDeploy"><i data-lucide="copy"></i></button>
+                                    </div>
+                                    <pre id="codeDeploy"><code># 1. Commit this web/ directory to a GitHub repository
+# 2. Go to repository Settings > Pages
+# 3. Enable deployment from main branch, web folder
+# 4. Or drag & drop the web/ folder directly to Netlify Drop (https://app.netlify.com/drop)</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Custom Script -->
+    <script src="app.js"></script>
+</body>
+</html>

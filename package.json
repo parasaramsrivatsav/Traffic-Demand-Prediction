@@ -1,0 +1,19 @@
+{
+  "name": "flipkart-demand-forecaster-dashboard",
+  "version": "1.0.0",
+  "description": "Logistics Demand Forecasting Web Dashboard for Flipkart Hackathon",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y http-server . -p 3000 -c-1",
+    "dev": "npx -y http-server . -p 3000 -c-1"
+  },
+  "keywords": [
+    "demand-forecasting",
+    "leaflet",
+    "chartjs",
+    "logistic-regression",
+    "flipkart-grid"
+  ],
+  "author": "Antigravity",
+  "license": "ISC"
+}
